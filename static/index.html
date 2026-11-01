@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YIDIE Full Biometric eKYC Platform (Liveness + Face Verification)</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="logo-area">
+      <div class="logo-badge">Y</div>
+      <div class="title-text">
+        <h1>YIDIE Full eKYC Identity Platform</h1>
+        <span>Component 2a & 2b: Face Verification + Presentation Attack Detection</span>
+      </div>
+    </div>
+    <div class="status-badge">
+      <div class="status-dot"></div>
+      <span id="system-status-text">AdaFace & Anti-Spoof Active</span>
+    </div>
+  </header>
+
+  <!-- Main Workstation -->
+  <main>
+    <!-- Left Column: Verification Pipeline Controls -->
+    <div class="card">
+      
+      <!-- STEP 1: ID DOCUMENT SELECTION -->
+      <div class="step-banner">
+        <span>Step 1: ID Card or Passport</span>
+      </div>
+
+      <div class="doc-upload-box" onclick="document.getElementById('doc-file-input').click()">
+        <img src="/static/placeholder_doc.png" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'70\' height=\'50\' fill=\'%23334155\'><rect width=\'70\' height=\'50\' rx=\'8\'/><text x=\'50%25\' y=\'55%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%2394a3b8\' font-size=\'10\'>ID CARD</text></svg>'" alt="ID Thumbnail" class="doc-thumb" id="doc-thumb-preview">
+        <div class="doc-info">
+          <div class="doc-info-title" id="doc-filename-display">ID.jpeg (Sample Selected)</div>
+          <div class="doc-info-sub">Click to upload custom ID/Passport, or select a sample below:</div>
+        </div>
+        <input type="file" id="doc-file-input" accept="image/*" style="display: none;" onchange="handleCustomDocUpload(event)">
+      </div>
+
+      <!-- Quick Sample Buttons -->
+      <div class="samples-row">
+        <span style="font-size: 0.75rem; color: var(--text-muted); align-self: center;">Quick Samples:</span>
+        <button class="sample-chip active" id="chip-id1" onclick="selectSampleDoc('ID.jpeg', 'chip-id1')">ID Card 1</button>
+        <button class="sample-chip" id="chip-id2" onclick="selectSampleDoc('ID2.jpeg', 'chip-id2')">ID Card 2</button>
+        <button class="sample-chip" id="chip-pass" onclick="selectSampleDoc('passport.jpeg', 'chip-pass')">Passport</button>
+      </div>
+
+      <!-- STEP 2: LIVE BIOMETRIC CAMERA -->
+      <div class="step-banner">
+        <span>Step 2: Live Biometric Challenge</span>
+      </div>
+
+      <div class="viewport-container" id="viewport">
+        <video id="webcam-video" autoplay playsinline muted></video>
+        <canvas id="capture-canvas"></canvas>
+
+        <!-- Biometric Oval Reticle -->
+        <div class="face-oval-guide" id="oval-guide">
+          <div class="scan-line" id="scan-line"></div>
+        </div>
+
+        <!-- Dynamic Challenge Prompt -->
+        <div class="challenge-banner" id="challenge-banner" style="display: none;">
+          <div class="challenge-text">
+            <span class="challenge-icon" id="challenge-icon">🔄</span>
+            <span id="challenge-msg">Position face in frame...</span>
+          </div>
+          <div class="challenge-timer" id="challenge-timer">5.0s</div>
+        </div>
+      </div>
+
+      <!-- Real-Time HUD Gauges -->
+      <div class="hud-telemetry">
+        <div class="hud-item">
+          <div class="hud-label">Head Pose (Yaw)</div>
+          <div class="hud-value">
+            <span id="hud-yaw-label">Center</span>
+            <span id="hud-yaw-val">0.50</span>
+          </div>
+          <div class="mini-bar">
+            <div class="mini-bar-fill" id="yaw-bar" style="width: 50%;"></div>
+          </div>
+        </div>
+
+        <div class="hud-item">
+          <div class="hud-label">Eye Openness (EAR)</div>
+          <div class="hud-value">
+            <span id="hud-ear-label">Open</span>
+            <span id="hud-ear-val">0.32</span>
+          </div>
+          <div class="mini-bar">
+            <div class="mini-bar-fill" id="ear-bar" style="width: 75%;"></div>
+          </div>
+        </div>
+
+        <div class="hud-item">
+          <div class="hud-label">Frame Sharpness</div>
+          <div class="hud-value">
+            <span id="hud-blur-label">Good</span>
+            <span id="hud-blur-val">150</span>
+          </div>
+          <div class="mini-bar">
+            <div class="mini-bar-fill" id="blur-bar" style="width: 80%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="controls-area">
+        <button class="btn-primary" id="btn-start" onclick="startFullEkycVerification()">
+          <span>🛡️ Run Full eKYC Verification</span>
+        </button>
+        <button class="btn-secondary" id="btn-reset" onclick="stopVerification()">Reset</button>
+      </div>
+    </div>
+
+    <!-- Right Column: Verification Results & Side-by-Side Matching -->
+    <div class="card results-card">
+      <div class="step-banner">
+        <span>Verification Verdict & Diagnostics</span>
+      </div>
+
+      <!-- Grand Verdict Box -->
+      <div class="verdict-box" id="verdict-box">
+        <div class="verdict-icon" id="verdict-icon">🛡️</div>
+        <div class="verdict-title" id="verdict-title">Ready for eKYC</div>
+        <div class="verdict-confidence" id="verdict-sub">Upload/select an ID document and click "Run Full eKYC Verification".</div>
+      </div>
+
+      <!-- Side-by-Side Face Comparison Card -->
+      <div class="comparison-container" id="comparison-box" style="display: none;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">
+          1:1 Face Verification Comparison
+        </div>
+        <div class="comparison-faces">
+          <div class="face-slot">
+            <img src="" alt="Document Face" class="face-avatar" id="avatar-doc">
+            <span class="face-label">ID Document</span>
+          </div>
+          <div class="match-arrow">
+            <span id="similarity-score-text" class="similarity-badge">--</span>
+            <span style="font-size: 0.7rem; color: var(--text-muted);">Cosine Sim</span>
+          </div>
+          <div class="face-slot">
+            <img src="" alt="Live Verified Selfie" class="face-avatar" id="avatar-selfie">
+            <span class="face-label">Live Selfie</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Diagnostics Breakdown -->
+      <div class="diagnostics-box">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.5rem;">
+          Deep Inspection Telemetry
+        </div>
+        <div class="metric-row">
+          <div class="metric-name">🎯 Active Liveness Gate</div>
+          <div class="metric-val" id="val-active-gate">--</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-name">🤖 Anti-Spoof Texture (MiniFASNet)</div>
+          <div class="metric-val" id="val-model-score">--</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-name">〰️ FFT Moiré Pattern Analysis</div>
+          <div class="metric-val" id="val-moire-score">--</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-name">✨ Specular Glare / Reflection</div>
+          <div class="metric-val" id="val-refl-score">--</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-name">👤 AdaFace IR-50 Verification</div>
+          <div class="metric-val" id="val-adaface-match">--</div>
+        </div>
+        <div class="metric-row" style="border-bottom: none; font-weight: 700; color: var(--text-primary);">
+          <div class="metric-name">⭐ Final Decision</div>
+          <div class="metric-val" id="val-final-decision">Pending</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

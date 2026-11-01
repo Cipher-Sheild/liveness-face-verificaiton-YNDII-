@@ -1,0 +1,27 @@
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Large Model Checkpoints (>100MB exceeds GitHub limits - download via download_models.py)
+core/verification/AdaFace/pretrained/*.ckpt
+*.ckpt
+*.part
+
+# User testing photos & personal document uploads (Privacy / Biometric protection)
+testing_photos/*
+!testing_photos/.gitkeep
+testing_photos/docs/*
+!testing_photos/docs/.gitkeep
+
+# Logs and temp files
+*.log
+.DS_Store
+Thumbs.db
